@@ -153,10 +153,15 @@ class IncidentReportController extends Controller
 
         $involved = DB::table('tbl_ir_involved as inv')
             ->join('tbl_employee as e', 'inv.employee_id', '=', 'e.id')
+            ->leftJoin('tbl_nte as n', function($join) use ($id){
+                $join->on('n.employee_id', '=', 'inv.employee_id')
+                    ->where('n.ir_id', '=', $id);
+            })
             ->where('inv.ir_id', $id)
             ->select(
                 'e.id',
-                DB::raw("CONCAT(e.first_name, ' ', e.last_name) as name")
+                DB::raw("CONCAT(e.first_name, ' ', e.last_name) as name"),
+                'n.id as nte_id' // null if no NTE yet
             )
             ->get();
 

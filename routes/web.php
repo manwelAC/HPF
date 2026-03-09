@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Auth\ForgotPasswordController; // forgot password
 use Illuminate\Support\Facades\Route;
 use Auth;
+use App\Http\Controllers\NTEController;
 
 
 /*
@@ -276,8 +277,13 @@ Route::get('employees_management', [employeeController::class, 'employees_manage
 
     //NTE Management Routes
     Route::get('nte_management', [NteController::class, 'index'])->middleware(['auth'])->name('nte_management');
-
-
+    Route::get('nte/list', [NTEController::class, 'list'])->middleware(['auth'])->name('nte.list');
+    Route::get('nte/view/{id}', [NTEController::class, 'view'])->middleware(['auth'])->name('nte.view');
+    Route::post('nte/store', [NTEController::class, 'store'])->middleware(['auth'])->name('nte.store');
+    Route::post('nte/update/{id}', [NTEController::class, 'update'])->middleware(['auth'])->name('nte.update');
+    Route::post('nte/reply/{id}', [NTEController::class, 'reply'])->middleware(['auth'])->name('nte.reply');
+    Route::post('nte/delete/{id}', [NTEController::class, 'delete'])->middleware(['auth'])->name('nte.delete');
+                                                        
     //Disciplinary Action Routes
     Route::get('disciplinary_action', [DisciplinaryController::class, 'index'])->middleware(['auth'])->name('disciplinary');
 

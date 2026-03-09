@@ -257,6 +257,62 @@
     </div>
 </div>
 
+{{-- Create NTE Modal --}}
+<div class="modal fade" id="modal_create_nte" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create NTE — <span id="nte_employee_name"></span></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="nte_ir_id">
+                <input type="hidden" id="nte_employee_id">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Date Served <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="nte_date_served">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Due Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="nte_due_date">
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Case Details <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="nte_case_details" rows="4" placeholder="Details of the case..."></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Remarks</label>
+                            <textarea class="form-control" id="nte_remarks" rows="3" placeholder="Admin remarks (optional)..."></textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Resolution</label>
+                            <textarea class="form-control" id="nte_resolution" rows="3" placeholder="Resolution (optional)..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="btn_save_nte">
+                    <i class="fa fa-save"></i> Save NTE
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endif
 @stop
 @section("scripts")
@@ -446,6 +502,7 @@ $(document).ready(function(){
     });
 
 // View IR Action Button Click
+// View IR
 $(document).on('click', '.btn_view_ir', function(){
     var id = $(this).data('id');
 
@@ -458,7 +515,6 @@ $(document).on('click', '.btn_view_ir', function(){
             HoldOn.close();
             if(response.success){
                 var ir = response.data;
-                var involved = ir.involved.map(function(e){ return e.name; }).join(', ');
 
                 $('#view_case_number').text(ir.case_number);
 
@@ -468,6 +524,31 @@ $(document).on('click', '.btn_view_ir', function(){
                 } else {
                     $('#btn_mark_reviewed').addClass('d-none');
                 }
+
+                // Build involved employees list with NTE buttons
+                var involved_html = '';
+                $.each(ir.involved, function(i, emp){
+                    var nte_button = '';
+                    if(ir.status == 'reviewed'){
+                        if(emp.nte_id){
+                            nte_button = `<button class="btn btn-info btn-sm btn_view_nte_from_ir" data-id="${emp.nte_id}">
+                                            <i class="fa fa-eye"></i> View NTE
+                                          </button>`;
+                        } else {
+                            nte_button = `<button class="btn btn-success btn-sm btn_create_nte" 
+                                            data-ir-id="${ir.id}" 
+                                            data-employee-id="${emp.id}"
+                                            data-employee-name="${emp.name}">
+                                            <i class="fa fa-plus"></i> Create NTE
+                                          </button>`;
+                        }
+                    }
+                    involved_html += `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>${emp.name}</span>
+                            ${nte_button}
+                        </div>`;
+                });
 
                 $('#view_ir_body').html(`
                     <div class="row">
@@ -497,7 +578,7 @@ $(document).on('click', '.btn_view_ir', function(){
                         </div>
                         <div class="col-md-12">
                             <label class="font-weight-bold">Names Involved</label>
-                            <p>${involved}</p>
+                            ${involved_html}
                         </div>
                         <div class="col-md-12">
                             <label class="font-weight-bold">Witnesses</label>
@@ -511,13 +592,7 @@ $(document).on('click', '.btn_view_ir', function(){
                 `);
 
                 $('#modal_view_ir').modal('show');
-            } else {
-                $.notify({ message: response.message }, { type: 'danger' });
             }
-        },
-        error: function(){
-            HoldOn.close();
-            $.notify({ message: 'Something went wrong. Please try again.' }, { type: 'danger' });
         }
     });
 });
@@ -711,6 +786,71 @@ $(document).on('click', '.btn_delete_ir', function(){
         }
     });
 });
+
+
+    // Open Create NTE Modal
+    $(document).on('click', '.btn_create_nte', function(){
+        var ir_id         = $(this).data('ir-id');
+        var employee_id   = $(this).data('employee-id');
+        var employee_name = $(this).data('employee-name');
+
+        // Reset fields
+        $('#nte_ir_id').val(ir_id);
+        $('#nte_employee_id').val(employee_id);
+        $('#nte_employee_name').text(employee_name);
+        $('#nte_date_served').val('');
+        $('#nte_due_date').val('');
+        $('#nte_case_details').val('');
+        $('#nte_remarks').val('');
+        $('#nte_resolution').val('');
+
+        $('#modal_create_nte').modal('show');
+    });
+
+    // Save NTE
+    $(document).on('click', '#btn_save_nte', function(){
+        var ir_id        = $('#nte_ir_id').val();
+        var employee_id  = $('#nte_employee_id').val();
+        var date_served  = $('#nte_date_served').val();
+        var due_date     = $('#nte_due_date').val();
+        var case_details = $('#nte_case_details').val();
+
+        if(!date_served || !due_date || !case_details){
+            alert('Please fill in all required fields.'); return;
+        }
+
+        HoldOn.open({ theme: 'sk-circle' });
+
+        $.ajax({
+            url: '{{ route("nte.store") }}',
+            type: 'POST',
+            data: {
+                _token:       '{{ csrf_token() }}',
+                ir_id:        ir_id,
+                employee_id:  employee_id,
+                date_served:  date_served,
+                due_date:     due_date,
+                case_details: case_details,
+                remarks:      $('#nte_remarks').val(),
+                resolution:   $('#nte_resolution').val()
+            },
+            success: function(response){
+                HoldOn.close();
+                if(response.success){
+                    $('#modal_create_nte').modal('hide');
+                    // Reload the View IR modal to reflect the new NTE button
+                    $('.btn_view_ir[data-id="' + ir_id + '"]').trigger('click');
+                    $.notify({ message: response.message }, { type: 'success' });
+                } else {
+                    $.notify({ message: response.message }, { type: 'danger' });
+                }
+            },
+            error: function(){
+                HoldOn.close();
+                $.notify({ message: 'Something went wrong. Please try again.' }, { type: 'danger' });
+            }
+        });
+    });
 
 });
 
