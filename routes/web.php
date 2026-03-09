@@ -266,6 +266,13 @@ Route::get('employees_management', [employeeController::class, 'employees_manage
     
     //Incident Report Routes
     Route::get('incident_report', [IncidentReportController::class, 'index'])->middleware(['auth'])->name('incident_report');
+    Route::get('ir/list', [IncidentReportController::class, 'list'])->middleware(['auth'])->name('ir.list');
+    Route::get('ir/search_employee', [IncidentReportController::class, 'searchEmployee'])->middleware(['auth'])->name('ir.search_employee');
+    Route::post('ir/store', [IncidentReportController::class, 'store'])->middleware(['auth'])->name('ir.store');
+    Route::get('ir/view/{id}', [IncidentReportController::class, 'view'])->middleware(['auth'])->name('ir.view');
+    Route::post('ir/update/{id}', [IncidentReportController::class, 'update'])->middleware(['auth'])->name('ir.update');
+    Route::post('ir/delete/{id}', [IncidentReportController::class, 'delete'])->middleware(['auth'])->name('ir.delete');
+    Route::post('ir/review/{id}', [IncidentReportController::class, 'review'])->middleware(['auth'])->name('ir.review');
 
     //NTE Management Routes
     Route::get('nte_management', [NteController::class, 'index'])->middleware(['auth'])->name('nte_management');
