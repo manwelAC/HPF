@@ -11,59 +11,56 @@ class NTEController extends Controller
 {
     public function index()
     {
-        return view("nte.nte");
+        return view("nte_management.nte");
     }
 
     // Load NTE list for DataTable
     public function list(Request $request)
-    {
-        $user = Auth::user();
-        $user_type = $user->role_type ?? null;
+        {
+            $user = Auth::user();
+            $user_type = $user->access['nte_management']['user_type'] ?? null;
 
-        $ntes = DB::table('tbl_nte as n')
-            ->leftJoin('tbl_employee as e', 'n.employee_id', '=', 'e.id')
-            ->leftJoin('tbl_incident_report as ir', 'n.ir_id', '=', 'ir.id')
-            ->select(
-                'n.id',
-                'n.case_number',
-                'n.date_served',
-                'n.due_date',
-                'n.status',
-                'ir.case_number as ir_case_number',
-                DB::raw("CONCAT(e.first_name, ' ', e.last_name) as employee_name")
-            );
+            $ntes = DB::table('tbl_nte as n')
+                ->leftJoin('tbl_employee as e', 'n.employee_id', '=', 'e.id')
+                ->leftJoin('tbl_incident_report as ir', 'n.ir_id', '=', 'ir.id')
+                ->select(
+                    'n.id',
+                    'n.case_number',
+                    'n.date_served',
+                    'n.due_date',
+                    'n.status',
+                    'ir.case_number as ir_case_number',
+                    DB::raw("CONCAT(e.first_name, ' ', e.last_name) as employee_name")
+                );
 
-        // If employee, only show their own NTEs
-        if($user_type == 'employee'){
-            $ntes = $ntes->where('n.employee_id', $user->employee_id);
+            if($user_type == 'employee'){
+                $employee = DB::table('tbl_employee')->where('user_id', $user->id)->first();
+                if($employee){
+                    $ntes = $ntes->where('n.employee_id', $employee->id);
+                } else {
+                    return response()->json(['data' => []]);
+                }
+            }
+
+            $ntes = $ntes->orderBy('n.date_created', 'desc')->get();
+
+            $count = 1;
+            foreach($ntes as $nte){
+                $nte->DT_RowIndex = $count++;
+                $nte->action = $this->actionButtons($nte->id, $nte->status);
+            }
+
+            return response()->json(['data' => $ntes]);
         }
-
-        $ntes = $ntes->orderBy('n.date_created', 'desc')->get();
-
-        $count = 1;
-        foreach($ntes as $nte){
-            $nte->DT_RowIndex = $count++;
-            $nte->action = $this->actionButtons($nte->id, $nte->status);
-        }
-
-        return response()->json(['data' => $ntes]);
-    }
 
     // Store new NTE
-    public function store(Request $request)
-    {
-        try {
-            // Get parent IR to derive case number
+public function store(Request $request)
+{
+    try {
+        // Generate case number
+        if($request->ir_id){
+            // NTE from IR — derive case number from parent IR
             $ir = DB::table('tbl_incident_report')->where('id', $request->ir_id)->first();
-
-            // Derive NTE case number from IR case number
-            // IR-20260903-0001 → NTE-20260903-0001
-            $nte_case_number = str_replace('IR-', 'NTE-', $ir->case_number) . '-' . str_pad(
-                DB::table('tbl_nte')->where('ir_id', $request->ir_id)->count() + 1, 
-                2, '0', STR_PAD_LEFT
-            );
-
-            // Actually derive it cleanly
             $base = substr($ir->case_number, 3); // remove "IR-"
             $nte_case_number = "NTE-" . $base;
 
@@ -79,33 +76,42 @@ class NTEController extends Controller
                     'message' => 'NTE already exists for this employee from this IR!'
                 ]);
             }
-
-            DB::table('tbl_nte')->insert([
-                'case_number'   => $nte_case_number,
-                'ir_id'         => $request->ir_id,
-                'employee_id'   => $request->employee_id,
-                'case_details'  => $request->case_details,
-                'remarks'       => $request->remarks,
-                'date_served'   => $request->date_served,
-                'due_date'      => $request->due_date,
-                'resolution'    => $request->resolution,
-                'status'        => 'pending',
-                'date_created'  => Carbon::now(),
-                'user_id_added' => Auth::id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => "NTE {$nte_case_number} created successfully!"
-            ]);
-
-        } catch(\Exception $e){
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong: ' . $e->getMessage()
-            ]);
+        } else {
+            // Standalone NTE — generate case number independently
+            $today = Carbon::now()->format('Ymd');
+            $count = DB::table('tbl_nte')
+                ->whereDate('date_created', Carbon::today())
+                ->count();
+            $sequence = str_pad($count + 1, 4, '0', STR_PAD_LEFT);
+            $nte_case_number = "NTE-{$today}-{$sequence}";
         }
+
+        DB::table('tbl_nte')->insert([
+            'case_number'   => $nte_case_number,
+            'ir_id'         => $request->ir_id ?? null,
+            'employee_id'   => $request->employee_id,
+            'case_details'  => $request->case_details,
+            'remarks'       => $request->remarks,
+            'date_served'   => $request->date_served,
+            'due_date'      => $request->due_date,
+            'resolution'    => $request->resolution,
+            'status'        => 'pending',
+            'date_created'  => Carbon::now(),
+            'user_id_added' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "NTE {$nte_case_number} created successfully!"
+        ]);
+
+    } catch(\Exception $e){
+        return response()->json([
+            'success' => false,
+            'message' => 'Something went wrong: ' . $e->getMessage()
+        ]);
     }
+}
 
     // View NTE details
     public function view($id)
@@ -198,29 +204,34 @@ class NTEController extends Controller
     private function actionButtons($id, $status)
     {
         $user = Auth::user();
-        $access = $user->access['nte']['access'] ?? '';
+        $access = $user->access['nte_management']['access'] ?? '';
+        $user_type = $user->access['nte_management']['user_type'] ?? '';
 
         $buttons = '';
 
+        // View button — always visible if has R access
         if(preg_match("/R/i", $access)){
             $buttons .= '<button class="btn btn-info btn-sm btn_view_nte" data-id="'.$id.'">
                             <i class="fa fa-eye"></i>
-                         </button> ';
+                        </button> ';
         }
 
-        // Only HR can edit, only if still pending
-        if(preg_match("/U/i", $access) && $status == 'pending'){
-            $buttons .= '<button class="btn btn-warning btn-sm btn_edit_nte" data-id="'.$id.'">
-                            <i class="fa fa-edit"></i>
-                         </button> ';
-        }
+        // Edit & Delete — only for HR, only if still pending
+        if($user_type == 'hr'){
+            if(preg_match("/U/i", $access) && $status == 'pending'){
+                $buttons .= '<button class="btn btn-warning btn-sm btn_edit_nte" data-id="'.$id.'">
+                                <i class="fa fa-edit"></i>
+                            </button> ';
+            }
 
-        if(preg_match("/D/i", $access) && $status == 'pending'){
-            $buttons .= '<button class="btn btn-danger btn-sm btn_delete_nte" data-id="'.$id.'">
-                            <i class="fa fa-trash"></i>
-                         </button>';
+            if(preg_match("/D/i", $access) && $status == 'pending'){
+                $buttons .= '<button class="btn btn-danger btn-sm btn_delete_nte" data-id="'.$id.'">
+                                <i class="fa fa-trash"></i>
+                            </button>';
+            }
         }
 
         return $buttons;
     }
+
 }
