@@ -578,7 +578,7 @@
 
         <div class="row mb-4">
             <div class="col-xl-9 col-sm-12 col-12" id="statistics_container">
-<div class="birthday-widget">
+<div class="birthday-widget mb-3">
 
     {{-- Header --}}
     <div class="bday-header">
@@ -655,7 +655,7 @@
 
 
                 
-                <div class="row mb-4">
+                <div class="row mb-4 ">
                     <div class="col-xl-4 col-sm-12 col-12">
                     
                         <div class="card board1 fill1 ">
@@ -894,7 +894,7 @@
             </div>
 
 
-<div class="col-xl-9 col-sm-12 col-12 anniversary-widget mt-4">
+<div class="col-xl-9 col-sm-12 col-12 anniversary-widget mt-3">
 
     {{-- Header --}}
     <div class="anniv-header">
