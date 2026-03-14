@@ -27,6 +27,7 @@ Route::post('password-reset', [ForgotPasswordController::class, 'submitResetPass
 Route::get('dashboard', [dashboardController::class, 'dashboard'])->middleware(['auth'])->name('dashboard');
     Route::post('branch_per_emp', [dashboardController::class, 'branch_per_emp'])->middleware(['auth'])->name('branch_per_emp');
     Route::post('count_mwe', [dashboardController::class, 'count_mwe'])->middleware(['auth'])->name('count_mwe');
+    Route::post('mark_employee_regular', [dashboardController::class, 'mark_employee_regular'])->middleware(['auth'])->name('mark_employee_regular');
 
 
     

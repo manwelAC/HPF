@@ -894,94 +894,109 @@
             </div>
 
 
-<div class="col-xl-9 col-sm-12 col-12 anniversary-widget mt-3">
+    <div class="col-xl-9 col-sm-12 col-12 anniversary-widget mt-3">
 
-    {{-- Header --}}
-    <div class="anniv-header">
-        <div class="anniv-header-title">Employee Anniversaries</div>
-        <div class="anniv-header-sub">Today &amp; upcoming in the next 7 days</div>
+        {{-- Header --}}
+        <div class="anniv-header">
+            <div class="anniv-header-title">Employee Anniversaries</div>
+            <div class="anniv-header-sub">Today &amp; upcoming in the next 7 days</div>
+        </div>
+
+        <div class="anniv-body">
+
+            {{-- TODAY'S ANNIVERSARIES --}}
+            @if($todayAnniversaries->isNotEmpty())
+                <div class="anniv-section-label">🎖️ Today</div>
+
+                @foreach($todayAnniversaries as $emp)
+                    @php
+                        $initials = strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1));
+                    @endphp
+                    <div class="anniv-today-card">
+                        <span class="confetti-bg">🎉</span>
+
+                        @if(!empty($emp->profile_picture) && file_exists(public_path($emp->profile_picture)))
+                            <img src="{{ asset($emp->profile_picture) }}" class="anniv-avatar" alt="{{ $emp->full_name }}">
+                        @else
+                            <div class="anniv-avatar-placeholder">{{ $initials }}</div>
+                        @endif
+
+                        <div>
+                            <div class="anniv-name">{{ $emp->full_name }}</div>
+                            <div class="anniv-meta">🎊 Celebrating {{ $emp->years_service }} {{ $emp->years_service === 1 ? 'Year' : 'Years' }}</div>
+                            <span class="anniv-today-badge">🌟 Work Anniversary!</span>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+
+            {{-- UPCOMING ANNIVERSARIES --}}
+            @if($upcomingAnniversaries->isNotEmpty())
+                <div class="anniv-section-label" style="{{ $todayAnniversaries->isNotEmpty() ? 'margin-top:14px;' : '' }}">
+                    📅 Upcoming
+                </div>
+
+                <ul class="anniv-upcoming-list">
+                    @foreach($upcomingAnniversaries as $emp)
+                        @php
+                            $isTomorrow = $emp->days_until === 1;
+                            $label = $isTomorrow ? 'tmrw' : 'days';
+                            $dateFormatted = \Carbon\Carbon::parse($emp->start_date)->format('M d');
+                        @endphp
+                        <li>
+                            <div class="anniv-days-pill {{ $isTomorrow ? 'is-tomorrow' : '' }}">
+                                <span class="anniv-days-num">{{ $emp->days_until }}</span>
+                                <span class="anniv-days-label">{{ $label }}</span>
+                            </div>
+                            <div class="anniv-info">
+                                <div class="anniv-name">{{ $emp->full_name }}</div>
+                                <div class="anniv-years">{{ $emp->years_service }} {{ $emp->years_service === 1 ? 'Year' : 'Years' }} of service</div>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            {{-- EMPTY STATE --}}
+            @if($todayAnniversaries->isEmpty() && $upcomingAnniversaries->isEmpty())
+                <div class="anniv-empty">
+                    <span class="anniv-empty-icon">🎊</span>
+                    <div class="anniv-empty-text">No work anniversaries in the next 7 days</div>
+                </div>
+            @endif
+
+        </div>
     </div>
 
-    <div class="anniv-body">
-
-        {{-- TODAY'S ANNIVERSARIES --}}
-        @if($todayAnniversaries->isNotEmpty())
-            <div class="anniv-section-label">🎖️ Today</div>
-
-            @foreach($todayAnniversaries as $emp)
-                @php
-                    $initials = strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1));
-                @endphp
-                <div class="anniv-today-card">
-                    <span class="confetti-bg">🎉</span>
-
-                    @if(!empty($emp->profile_picture) && file_exists(public_path($emp->profile_picture)))
-                        <img src="{{ asset($emp->profile_picture) }}" class="anniv-avatar" alt="{{ $emp->full_name }}">
-                    @else
-                        <div class="anniv-avatar-placeholder">{{ $initials }}</div>
-                    @endif
-
-                    <div>
-                        <div class="anniv-name">{{ $emp->full_name }}</div>
-                        <div class="anniv-meta">🎊 Celebrating {{ $emp->years_service }} {{ $emp->years_service === 1 ? 'Year' : 'Years' }}</div>
-                        <span class="anniv-today-badge">🌟 Work Anniversary!</span>
+    <div class="col-xl-3 col-sm-12 col-12 mt-3 d-flex">
+                <div class="card flex-fill" style="border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.10); display: flex; flex-direction: column; cursor: pointer;" onclick="openAllRegularizationModal()">
+                    <div style="background: linear-gradient(120deg, #20c997, #17a2b8, #0dcaf0); padding: 16px 20px 14px; position: relative; overflow: hidden;">
+                        <div style="position: absolute; right: -8px; top: -10px; font-size: 72px; opacity: 0.13; transform: rotate(-15deg); pointer-events: none;">📋</div>
+                        <h5 style="color: white; font-weight: 800; letter-spacing: 0.3px; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">Employee Regularization</h5>
+                        <p style="font-size: 11px; color: rgba(255,255,255,0.78); margin-top: 3px; font-weight: 600;">Ready for evaluation</p>
+                    </div>
+                    <div style="background: #fff; padding: 14px 16px 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 48px; font-weight: 800; color: #0dcaf0; line-height: 1; margin-bottom: 8px;">{{ $regularizationEmployees->count() }}</div>
+                            <div style="font-size: 13px; color: #666; font-weight: 600;">{{ $regularizationEmployees->count() === 1 ? 'Employee' : 'Employees' }} Ready</div>
+                            @if($regularizationEmployees->count() > 0)
+                                <div style="font-size: 11px; color: #0dcaf0; margin-top: 8px;">Click to review</div>
+                            @else
+                                <div style="font-size: 11px; color: #ccc; margin-top: 8px;">No pending reviews</div>
+                            @endif
+                        </div>
                     </div>
                 </div>
-            @endforeach
-        @endif
-
-        {{-- UPCOMING ANNIVERSARIES --}}
-        @if($upcomingAnniversaries->isNotEmpty())
-            <div class="anniv-section-label" style="{{ $todayAnniversaries->isNotEmpty() ? 'margin-top:14px;' : '' }}">
-                📅 Upcoming
             </div>
-
-            <ul class="anniv-upcoming-list">
-                @foreach($upcomingAnniversaries as $emp)
-                    @php
-                        $isTomorrow = $emp->days_until === 1;
-                        $label = $isTomorrow ? 'tmrw' : 'days';
-                        $dateFormatted = \Carbon\Carbon::parse($emp->start_date)->format('M d');
-                    @endphp
-                    <li>
-                        <div class="anniv-days-pill {{ $isTomorrow ? 'is-tomorrow' : '' }}">
-                            <span class="anniv-days-num">{{ $emp->days_until }}</span>
-                            <span class="anniv-days-label">{{ $label }}</span>
-                        </div>
-                        <div class="anniv-info">
-                            <div class="anniv-name">{{ $emp->full_name }}</div>
-                            <div class="anniv-years">{{ $emp->years_service }} {{ $emp->years_service === 1 ? 'Year' : 'Years' }} of service</div>
-                        </div>
-                    </li>
-                @endforeach
-            </ul>
-        @endif
-
-        {{-- EMPTY STATE --}}
-        @if($todayAnniversaries->isEmpty() && $upcomingAnniversaries->isEmpty())
-            <div class="anniv-empty">
-                <span class="anniv-empty-icon">🎊</span>
-                <div class="anniv-empty-text">No work anniversaries in the next 7 days</div>
-            </div>
-        @endif
-
-    </div>
-</div>
  
         </div>
 
-
-
         <div class="row" id="graph_container">
-            <div class="col-md-6 ">
-                
-                <div id="container"></div>
-                
+            <div class="col-md-6">
+                <div id="container" style="min-height: 400px;"></div>
             </div>
-             <div class="col-md-6">
-                
-                <div id="container_2"></div>
-                
+            <div class="col-md-6">
+                <div id="container_2" style="min-height: 400px;"></div>
             </div> 
         </div>
         
@@ -989,6 +1004,52 @@
 </div>
 @endif
 @stop
+
+<!-- Regularization Modal -->
+<div class="modal fade" id="regularizationModal" tabindex="-1" role="dialog" aria-labelledby="regularizationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(120deg, #20c997, #17a2b8, #0dcaf0); border: none;">
+                <h5 class="modal-title" id="regularizationModalLabel" style="color: white; font-weight: 800;">Employees Ready for Regularization</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+                @if($regularizationEmployees->isNotEmpty())
+                    @foreach($regularizationEmployees as $emp)
+                        @php
+                            $initials = strtoupper(substr($emp->first_name, 0, 1) . substr($emp->last_name, 0, 1));
+                            $isTomorrow = $emp->days_for_regularization === 1;
+                            $label = $isTomorrow ? 'tomorrow' : 'days ago';
+                        @endphp
+                        <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 15px; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                <div style="flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #20c997, #17a2b8); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 18px;">{{ $initials }}</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 700; font-size: 14px; color: #2d2d2d; margin-bottom: 4px;">{{ $emp->full_name }}</div>
+                                    <div style="font-size: 12px; color: #666; margin-bottom: 2px;">📅 Started: {{ date('M d, Y', strtotime($emp->start_date)) }}</div>
+                                    <div style="font-size: 12px; color: #0dcaf0; font-weight: 600;">Ready for {{ $emp->days_for_regularization }} {{ $label }}</div>
+                                    <div style="background: #ffc107; color: #333; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; display: inline-block; margin-top: 6px;">Probationary - 1 Month Complete</div>
+                                </div>
+                                <button type="button" class="btn btn-success btn-sm" onclick="markEmployeeRegular('{{ $emp->id }}', '{{ $emp->full_name }}')">✓ Make Regular</button>
+                            </div>
+                        </div>
+                    @endforeach
+                @else
+                    <div style="text-align: center; padding: 30px;">
+                        <span style="font-size: 48px; display: block; margin-bottom: 10px;">📋</span>
+                        <div style="font-size: 16px; color: #ccc; font-weight: 600;">No employees ready for regularization</div>
+                    </div>
+                @endif
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section("scripts")
 <script src="{{asset_with_env('plugins/highcharts/highcharts.js')}}"></script>
 <script src="{{asset_with_env('plugins/highcharts/variable-pie.js')}}"></script>
@@ -1162,6 +1223,47 @@
                     });
             });
   
-           
+            // Regularization Modal Functions
+            function openAllRegularizationModal() {
+                $("#regularizationModal").modal('show');
+            }
+
+            function markEmployeeRegular(empId, empName) {
+                $.confirm({
+                    title: 'Regularize Employee',
+                    content: 'Are you sure you want to make ' + empName + ' a regular employee?',
+                    escapeKey: 'cancelAction',
+                    buttons: {
+                        confirm: {
+                            text: 'Yes, Regularize',
+                            btnClass: 'btn-success',
+                            action: function() {
+                                $.ajax({
+                                    url: "{{ route('mark_employee_regular') }}",
+                                    data: {
+                                        _token: "{{ csrf_token() }}",
+                                        emp_id: empId
+                                    },
+                                    type: 'POST',
+                                    success: function(response) {
+                                        $.notify("Employee regularized successfully", {type:"success", icon:"check"});
+                                        location.reload();
+                                    },
+                                    error: function(error) {
+                                        $.notify("Error regularizing employee", {type:"danger", icon:"close"});
+                                    }
+                                });
+                            }
+                        },
+                        cancel: {
+                            text: 'Cancel',
+                            btnClass: 'btn-secondary',
+                            action: function() {
+                                // Nothing
+                            }
+                        }
+                    }
+                });
+            }
     </script>
 @stop

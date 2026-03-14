@@ -137,6 +137,44 @@ class dashboardController extends Controller
 
         $upcomingAnniversaries = $upcomingAnniversaries->sortBy('days_until')->values();
 
+        // Get Regularization Data - Probationary employees reaching 1 month
+        $regularizationEmployees = collect();
+        $allEmployeesForRegularization = DB::connection("intra_payroll")
+            ->table("tbl_employee")
+            ->select('id', 'first_name', 'middle_name', 'last_name', 'ext_name', 'start_date', 'employment_status', 'profile_picture', 'department')
+            ->where('employment_status', 'Probationary')
+            ->whereNotNull('start_date')
+            ->where('start_date', '!=', '')
+            ->where('is_active', 1)
+            ->get();
+
+        foreach ($allEmployeesForRegularization as $emp) {
+            try {
+                $startDate = Carbon::parse($emp->start_date);
+            } catch (\Exception $e) {
+                continue;
+            }
+
+            // Check if exactly 1 month has passed
+            $oneMonthAgo = $today->copy()->subMonth();
+            $oneMonthFromNow = $today->copy()->addMonth();
+
+            // If start_date was between 1 month ago and today, or if 1 month from start date is today/soon
+            if ($startDate->copy()->addMonth()->format('Y-m-d') === $today->format('Y-m-d')) {
+                // Exactly 1 month today
+                $emp->full_name = $this->formatEmployeeName($emp);
+                $emp->days_for_regularization = 0;
+                $regularizationEmployees->push($emp);
+            } elseif ($startDate->copy()->addMonth()->isFuture() && $startDate->copy()->addMonth()->diffInDays($today) <= 7 && $startDate->copy()->addMonth()->diffInDays($today) >= 0) {
+                // Within next 7 days
+                $emp->full_name = $this->formatEmployeeName($emp);
+                $emp->days_for_regularization = $today->diffInDays($startDate->copy()->addMonth());
+                $regularizationEmployees->push($emp);
+            }
+        }
+
+        $regularizationEmployees = $regularizationEmployees->sortBy('days_for_regularization')->values();
+
         return view("dashboard.index")
             ->with("tbl_employee", $tbl_employee)
             ->with("department", $department)
@@ -151,7 +189,8 @@ class dashboardController extends Controller
             ->with("todayBirthdays", $todayBirthdays)
             ->with("upcomingBirthdays", $upcomingBirthdays)
             ->with("todayAnniversaries", $todayAnniversaries)
-            ->with("upcomingAnniversaries", $upcomingAnniversaries);
+            ->with("upcomingAnniversaries", $upcomingAnniversaries)
+            ->with("regularizationEmployees", $regularizationEmployees);
     }
 
     private function formatEmployeeName($emp): string
@@ -192,5 +231,20 @@ class dashboardController extends Controller
             ->get();
 
         return json_encode($tbl_employee);
+    }
+
+    public function mark_employee_regular(Request $request)
+    {
+        try {
+            DB::connection("intra_payroll")->table("tbl_employee")
+                ->where("id", $request->emp_id)
+                ->update([
+                    "employment_status" => "Regular"
+                ]);
+
+            return json_encode("success");
+        } catch (\Throwable $th) {
+            return json_encode($th->getMessage());
+        }
     }
 }

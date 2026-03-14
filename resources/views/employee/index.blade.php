@@ -136,6 +136,7 @@
                 var branch = $("#branch").val();
                 var designation = $("#designation").val();
                 var hiring_type = $("#hiring_type").val();
+                var employment_status = $("#employment_status").val();
                 var agency_name = $("#agency_name").val();
                 var salary_type = $("#salary_type").val();
                 var salary_rate = $("#salary_rate").val();
@@ -176,6 +177,7 @@
                     formData.append('branch', branch);
                     formData.append('designation', designation);
                     formData.append('hiring_type', hiring_type);
+                    formData.append('employment_status', employment_status);
                     formData.append('agency_name', agency_name);
                     formData.append('salary_type', salary_type);
                     formData.append('salary_rate', salary_rate);
@@ -343,6 +345,7 @@
                                 $("#branch").val(data.branch_id).change();
                                 $("#designation").val(data.designation).change();
                                 $("#hiring_type").val(data.is_direct).change();
+                                $("#employment_status").val(data.employment_status).change();
                                 $("#agency_name").val(data.agency_name);
                                 $("#salary_type").val(data.salary_type).change();
                                 $("#salary_rate").val(data.salary_rate);

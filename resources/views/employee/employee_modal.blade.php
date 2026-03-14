@@ -185,6 +185,19 @@
                             </div>
                             <div class="row mt-2">
                                 <div class="col-md-2">
+                                    <label class='emp_label'> Employment Status</label>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-control form-select" id="employment_status">
+                                        <option value="">Select Status</option>
+                                        <option value="Probationary">Probationary</option>
+                                        <option value="Regular">Regular</option>
+                                        
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-2">
                                     <label class='emp_label'>Start Date</label>
                                 </div>
                                 <div class="col-md-3">
